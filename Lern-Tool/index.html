@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LernMeister 💙 – Lern-App für die Beziehung</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💙</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===== KOPFLEISTE ===== -->
+  <header class="topbar">
+    <button id="btnHome" class="topbar-home" title="Zur Startseite">
+      <span class="logo">💙</span>
+      <span class="logo-text">LernMeister</span>
+    </button>
+    <div class="topbar-stats">
+      <div class="stat" title="Deine Punkte" aria-label="Deine Punkte">
+        <span class="stat-icon">⭐</span>
+        <span id="pointsDisplay">0</span>
+      </div>
+      <div class="stat" title="Freigeschaltete Badges" aria-label="Freigeschaltete Badges">
+        <span class="stat-icon">🏅</span>
+        <span id="badgesDisplay">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== HAUPTBEREICH ===== -->
+  <main id="main">
+
+    <!-- ========== STARTSEITE ========== -->
+    <section id="view-home" class="view">
+      <div class="hero">
+        <h1>Hallo Jonas! 👋</h1>
+        <p class="hero-sub">Wähle ein Modul, um zu lernen. Dein Fortschritt wird automatisch gespeichert.</p>
+      </div>
+
+      <!-- V1.1: Nächstes Ziel -->
+      <div id="goalBox" class="goal-box hidden">
+        <h3 id="goalTitel">🎯 Dein nächstes Ziel</h3>
+        <p id="goalText"></p>
+        <div class="module-progress"><div id="goalBar" class="module-progress-bar"></div></div>
+      </div>
+
+      <div class="module-grid">
+        <button class="module-card" data-view="view-gespraech">
+          <div class="module-icon">💬</div>
+          <h2>Gespräche</h2>
+          <p>Themen für eure Gespräche – vom Smalltalk bis zu schwierigen Momenten. Mit Beispielen, Tipps und Quiz.</p>
+          <div class="module-progress"><div id="progGespraech" class="module-progress-bar"></div></div>
+          <span id="progGespraechText" class="module-progress-text">0 / 0 Themen gemeistert</span>
+        </button>
+
+        <button class="module-card" data-view="view-rechtschreibung">
+          <div class="module-icon">✍️</div>
+          <h2>Rechtschreibung</h2>
+          <p>Lücken füllen, Wörter tippen, Fehler finden und Groß-/Kleinschreibung üben.</p>
+          <div class="module-progress"><div id="progRechtschreibung" class="module-progress-bar"></div></div>
+          <span id="progRechtschreibungText" class="module-progress-text">0 / 0 Übungen gelöst</span>
+        </button>
+      </div>
+
+      <!-- Badges -->
+      <div class="badges-section">
+        <h3>🏅 Deine Auszeichnungen</h3>
+        <div id="badgesList" class="badges-list"></div>
+      </div>
+
+      <!-- Fortschritt-Reset -->
+      <div class="home-footer">
+        <button id="btnReset" class="btn-danger">🗑️ Fortschritt zurücksetzen</button>
+      </div>
+
+    <!-- ========== GESPRÄCHE: THEMENLISTE ========== -->
+    <section id="view-gespraech" class="view hidden">
+      <div class="view-header">
+        <button class="btn-back" data-view="view-home">← Zurück</button>
+        <h1>💬 Gespräche</h1>
+        <p class="view-sub">Wähle ein Thema. Die Niveaus gehen von einfach (1) bis anspruchsvoll (6).</p>
+      </div>
+      <div id="themenList" class="themen-list"></div>
+    </section>
+
+    <!-- ========== GESPRÄCHE: THEMASEITE ========== -->
+    <section id="view-thema" class="view hidden">
+      <div class="view-header">
+        <button class="btn-back" data-view="view-gespraech">← Themen</button>
+        <h1 id="themaTitel"></h1>
+      </div>
+      <div id="themaInhalt"></div>
+    </section>
+
+    <!-- ========== RECHTSCHREIBUNG: AUSWAHL ========== -->
+    <section id="view-rechtschreibung" class="view hidden">
+      <div class="view-header">
+        <button class="btn-back" data-view="view-home">← Zurück</button>
+        <h1>✍️ Rechtschreibung</h1>
+        <p class="view-sub">Wähle einen Übungstyp. Fehler werden gemerkt und später öfter gezeigt!</p>
+      </div>
+      <div class="module-grid two-cols">
+        <button class="module-card small" data-uebung="luecken">
+          <div class="module-icon">🔤</div>
+          <h3>Lücken füllen</h3>
+          <p>das / dass, ist / esse, ich / dich ...</p>
+        </button>
+        <button class="module-card small" data-uebung="woerter">
+          <div class="module-icon">⌨️</div>
+          <h3>Wörter schreiben</h3>
+          <p>Schreibe das Wort richtig.</p>
+        </button>
+        <button class="module-card small" data-uebung="fehler">
+          <div class="module-icon">🔍</div>
+          <h3>Fehler finden</h3>
+          <p>In dem Satz ist genau EIN Fehler. Finde ihn!</p>
+        </button>
+        <button class="module-card small" data-uebung="gross">
+          <div class="module-icon">🔠</div>
+          <h3>Groß / Klein</h3>
+          <p>Soll das Wort groß oder klein geschrieben werden?</p>
+        </button>
+      </div>
+      <div class="re-challenge-box" id="reChallengeBox" hidden>
+        <h3>🎯 Deine Schwachstellen</h3>
+        <p>Hier sind Wörter/Sätze, die du oft falsch machst – übe sie gezielt!</p>
+        <button id="btnReChallenge" class="btn-primary">Jetzt üben</button>
+      </div>
+    </section>
+
+    <!-- ========== RECHTSCHREIBUNG: ÜBUNG ========== -->
+    <section id="view-uebung" class="view hidden">
+      <div class="view-header">
+        <button class="btn-back" data-view="view-rechtschreibung">← Übungstypen</button>
+        <h1 id="uebungTitel">Übung</h1>
+      </div>
+      <div id="uebungFortschritt" class="uebung-fortschritt">
+        <div class="uebung-fortschritt-bar"><div id="uebungFortschrittBar"></div></div>
+        <span id="uebungFortschrittText"></span>
+      </div>
+      <div id="uebungInhalt" class="uebung-karte"></div>
+    </section>
+
+    <!-- ========== ERGEBNIS ========== -->
+    <section id="view-ergebnis" class="view hidden">
+      <div class="view-header">
+        <button class="btn-back" id="btnErgebnisZuruck">← Zurück</button>
+        <h1 id="ergebnisTitel">Fertig!</h1>
+      </div>
+      <div id="ergebnisInhalt" class="ergebnis-karte"></div>
+    </section>
+
+  </main>
+
+  <!-- Feedback-Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- ===== SCRIPTS (Reihenfolge wichtig!) ===== -->
+  <script src="js/daten/gespraech-daten.js"></script>
+  <script src="js/daten/rechtschreibung-daten.js"></script>
+  <script src="js/gespraech.js"></script>
+  <script src="js/rechtschreibung.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

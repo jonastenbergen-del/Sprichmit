@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Almanca Öğren</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4f46e5">
+</head>
+<body>
+
+  <!-- ========== LOGIN ========== -->
+  <div id="login-screen" class="screen">
+    <div class="login-box">
+      <div class="login-logo">🇩🇪🇹🇷</div>
+      <h1>Almanca Öğren</h1>
+      <p class="subtitle">Günlük 10 dakika, her gün biraz daha! 💪</p>
+
+      <div id="login-form">
+        <input type="email" id="login-email" placeholder="E-posta adresi" autocomplete="email">
+        <input type="password" id="login-password" placeholder="Parola" autocomplete="current-password">
+        <button class="btn btn-primary btn-big" id="btn-login">Giriş Yap</button>
+        <div id="login-error" class="error"></div>
+      </div>
+
+      <div id="signup-box" class="hidden">
+        <p>Yeni misin? Önce kayıt ol:</p>
+        <button class="btn btn-primary btn-big" id="btn-signup">Kayıt Ol</button>
+        <button class="btn btn-ghost" id="btn-back-login">← Giriş ekranına dön</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== APP ========== -->
+  <div id="app" class="hidden">
+
+    <header class="topbar">
+      <div class="streak" title="Günlük seri" aria-label="Günlük seri">🔥 <span id="streak-count">0</span> gün</div>
+      <div class="topbar-title">Almanca Öğren</div>
+      <button class="icon-btn" id="btn-logout" title="Çıkış" aria-label="Çıkış">👤</button>
+    </header>
+
+    <main>
+
+      <!-- --- ANA SAYFA --- -->
+      <section id="view-home" class="view">
+        <h2>Merhaba! 👋</h2>
+        <div id="goal-box" class="goal-box hidden">
+          <h3 id="goal-titel">🎯 Bir sonraki hedef</h3>
+          <p id="goal-text"></p>
+          <div class="progress-bar"><div id="goal-fill"></div></div>
+        </div>
+        <div class="cards-grid">
+          <div class="stat-card">
+            <div class="stat-num" id="stat-new">0</div>
+            <div class="stat-label">Bugün yeni kelime</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-due">0</div>
+            <div class="stat-label">Tekrar bekliyor</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-known">0</div>
+            <div class="stat-label">Öğrenilen toplam</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-box">-</div>
+            <div class="stat-label">En yüksek kutu</div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-big" id="btn-start" style="width:100%">
+          ▶ Öğrenmeye Başla
+        </button>
+
+        <div id="celebrate-box" class="hidden"></div>
+
+        <p class="tip-box">💡 İpucu: Her gün aynı saatte çalış, seri (🔥) bozulmasın!</p>
+      </section>
+
+      <!-- --- YENİ KELİME --- -->
+      <section id="view-new" class="view hidden">
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+        <p class="instruction">Almanca kelimeyi dinle ve oku. Sonra anlamına bak.</p>
+
+        <div class="flashcard" id="new-card">
+          <button class="speak-btn" id="new-speak">🔊</button>
+          <div class="flashcard-de" id="new-de"></div>
+          <div class="flashcard-phon" id="new-phon"></div>
+          <div class="flashcard-hint" id="new-hint">Altmayı dokun → Türkçesi görünsün 👇</div>
+          <div class="flashcard-tr hidden" id="new-tr"></div>
+        </div>
+
+        <div class="answer-row">
+          <button class="btn btn-wrong" id="new-miss">😅 Zor</button>
+          <button class="btn btn-right" id="new-known">😊 Biliyorum</button>
+        </div>
+      </section>
+
+      <!-- --- TEKRAR --- -->
+      <section id="view-rev" class="view hidden">
+        <div class="progress-bar"><div id="rev-progress-fill"></div></div>
+        <p class="instruction" id="rev-instruction">Hangisi doğru?</p>
+        <div id="rev-content"></div>
+      </section>
+
+      <!-- --- YAZMA (KÂĞIT) --- -->
+      <section id="view-write" class="view hidden">
+        <h2>✍️ Kağıda Yaz</h2>
+        <p class="instruction">Bu kelimeleri defterine 5 kez yaz. Yazdıktan sonra kutuyu işaretle.</p>
+        <div id="writing-list"></div>
+        <p class="tip-box">📸 Fotoğrafını çekip Jonas'a gönderebilirsin!</p>
+      </section>
+
+      <!-- --- TELEFON --- -->
+      <section id="view-phone" class="view hidden">
+        <h2>📞 Telefon Zamanı!</h2>
+        <p class="instruction">Bu kelimeleri yavaşça dinle, sonra Jonas'ı ara ve onlara söyle!</p>
+        <div id="phone-list"></div>
+        <p class="tip-box">✅ Başarısan, arayınca söyle — o seni kutlasın! 🎉</p>
+      </section>
+
+      <!-- --- İLERLEME --- -->
+      <section id="view-prog" class="view hidden">
+        <h2>📈 İlerleme</h2>
+        <div class="cards-grid">
+          <div class="stat-card"><div class="stat-num" id="p-streak">0</div><div class="stat-label">Gün serisi 🔥</div></div>
+          <div class="stat-card"><div class="stat-num" id="p-known">0</div><div class="stat-label">Öğrenilen kelime</div></div>
+          <div class="stat-card"><div class="stat-num" id="p-done">0</div><div class="stat-label">Tamamlanan tekrar</div></div>
+          <div class="stat-card"><div class="stat-num" id="p-write">0</div><div class="stat-label">Yazma görevi ✓</div></div>
+        </div>
+        <h3>Kutular (Leitner)</h3>
+        <div id="box-list"></div>
+        <div id="milestone-box" class="hidden"></div>
+      </section>
+
+    </main>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottomnav">
+      <button data-view="home" class="active">🏠<span>Ana</span></button>
+      <button data-view="new">📚<span>Yeni</span></button>
+      <button data-view="rev">🔁<span>Tekrar</span></button>
+      <button data-view="write">✍️<span>Yaz</span></button>
+      <button data-view="phone">📞<span>Telefon</span></button>
+      <button data-view="prog">📈<span>İlerle</span></button>
+    </nav>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/tts.js"></script>
+  <script src="js/vocab.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

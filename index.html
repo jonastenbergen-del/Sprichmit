@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SprichMit</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4f46e5">
+</head>
+<body>
+
+  <!-- ========== LOGIN ========== -->
+  <div id="login-screen" class="screen">
+    <div class="login-box">
+      <div class="login-logo">🇩🇪🇹🇷</div>
+      <h1>SprichMit</h1>
+      <p class="subtitle" id="login-sub">10 Minuten am Tag — jeden Tag ein Stück weiter! 💪</p>
+
+      <div id="dir-box">
+        <p id="login-choose" style="text-align:center;font-weight:600;margin:12px 0 8px"></p>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" id="dir-de" style="flex:1">🇩🇪 Deutsch</button>
+          <button class="btn btn-ghost" id="dir-tr" style="flex:1">🇹🇷 Türkisch</button>
+        </div>
+      </div>
+
+      <div id="login-form" style="margin-top:14px">
+        <input type="email" id="login-email" placeholder="E-Mail" autocomplete="email">
+        <input type="password" id="login-password" placeholder="Passwort" autocomplete="current-password">
+        <button class="btn btn-primary btn-big" id="btn-login">Anmelden</button>
+        <div id="login-error" class="error"></div>
+      </div>
+
+      <div id="signup-box" class="hidden">
+        <p>Neu hier? Zuerst registrieren:</p>
+        <button class="btn btn-primary btn-big" id="btn-signup">Registrieren</button>
+        <button class="btn btn-ghost" id="btn-back-login">← Zurück zum Login</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== APP ========== -->
+  <div id="app" class="hidden">
+
+    <header class="topbar">
+      <div class="streak" title="Streak" aria-label="Streak">🔥 <span id="streak-count">0</span> <span id="streak-unit"></span></div>
+      <div class="topbar-title">SprichMit</div>
+      <button class="icon-btn" id="btn-logout" title="Profil" aria-label="Profil">👤</button>
+    </header>
+
+    <main>
+
+      <!-- --- HOME --- -->
+      <section id="view-home" class="view">
+        <h2 id="home-hello"></h2>
+        <p class="tip-box" id="home-learning"></p>
+        <div id="goal-box" class="goal-box hidden">
+          <h3 id="goal-titel"></h3>
+          <p id="goal-text"></p>
+          <div class="progress-bar"><div id="goal-fill"></div></div>
+        </div>
+        <div class="cards-grid">
+          <div class="stat-card">
+            <div class="stat-num" id="stat-new">0</div>
+            <div class="stat-label" id="label-newtoday"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-due">0</div>
+            <div class="stat-label" id="label-duetoday"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-known">0</div>
+            <div class="stat-label" id="label-known"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="stat-xp">0</div>
+            <div class="stat-label" id="label-xp"></div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-big" id="btn-path" style="width:100%;margin-top:8px">📚 <span id="path-btn-label"></span></button>
+
+        <div id="celebrate-box" class="hidden"></div>
+
+        <p class="tip-box" id="home-tip"></p>
+      </section>
+
+      <!-- --- LERNE-PUFAAD (20 Lektionen) --- -->
+      <section id="view-path" class="view hidden">
+        <h2 id="path-h2"></h2>
+        <p class="instruction" id="path-sub"></p>
+        <div id="lesson-list"></div>
+      </section>
+
+      <!-- --- SESSION --- -->
+      <section id="view-session" class="view hidden">
+        <div class="progress-bar"><div id="progress-fill"></div></div>
+        <p class="instruction" id="session-instruction"></p>
+        <div id="session-content"></div>
+      </section>
+
+      <!-- --- ERGEBNIS --- -->
+      <section id="view-result" class="view hidden">
+        <div id="result-content"></div>
+      </section>
+
+      <!-- --- PROFIL --- -->
+      <section id="view-profile" class="view hidden">
+        <h2 id="profile-h2"></h2>
+        <div class="cards-grid" style="margin-bottom:14px">
+          <div class="stat-card"><div class="stat-num" id="p-streak">0</div><div class="stat-label" id="p-streak-l"></div></div>
+          <div class="stat-card"><div class="stat-num" id="p-known">0</div><div class="stat-label" id="p-known-l"></div></div>
+          <div class="stat-card"><div class="stat-num" id="p-lessons">0</div><div class="stat-label" id="p-lessons-l"></div></div>
+          <div class="stat-card"><div class="stat-num" id="p-xp">0</div><div class="stat-label" id="p-xp-l"></div></div>
+        </div>
+
+        <h3 id="profile-direction-label" style="margin-bottom:8px"></h3>
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <button class="btn btn-ghost" id="p-dir-de" style="flex:1">🇩🇪 Deutsch</button>
+          <button class="btn btn-ghost" id="p-dir-tr" style="flex:1">🇹🇷 Türkisch</button>
+        </div>
+
+        <h3 style="margin-bottom:8px">Leitner-Boxen</h3>
+        <div id="box-list"></div>
+        <div id="milestone-box" class="hidden"></div>
+
+        <button class="btn btn-ghost" id="p-logout" style="width:100%;margin-top:16px"></button>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/lang.js"></script>
+  <script src="js/tts.js"></script>
+  <script src="js/data/words_de.js"></script>
+  <script src="js/data/words_tr.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

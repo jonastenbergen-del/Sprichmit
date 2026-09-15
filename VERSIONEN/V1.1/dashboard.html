@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lehrer-Dashboard</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body { max-width: 800px; margin: 0 auto; padding: 24px 16px 60px; }
+    .dash-header { margin-bottom: 24px; }
+    .dash-header h1 { font-size: 26px; }
+    .dash-header p { color: var(--muted); }
+    .person-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+    .person-name { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+    .person-sub { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+    .mini-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+    .mini-grid .stat-card { padding: 12px; }
+    .mini-grid .stat-num { font-size: 24px; }
+    .hard-words {
+      background: var(--red-light);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 15px;
+      color: #7f1d1d;
+    }
+    .ok-note {
+      background: var(--green-light);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 15px;
+      color: #14532d;
+    }
+    .access-denied {
+      text-align: center;
+      padding: 80px 20px;
+      font-size: 18px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="denied" class="access-denied hidden">
+    🚫 Diese Seite ist nur für angemeldete Lehrkräfte sichtbar.
+    <br><br>
+    <a href="index.html" class="btn btn-primary" style="display:inline-block;max-width:300px">Zur Lern-App →</a>
+  </div>
+
+  <div id="dash" class="hidden">
+    <div class="dash-header">
+      <h1>📊 Fortschritt der Lernenden</h1>
+      <p>Stand: <span id="now"></span> · <a href="index.html">Zur App →</a></p>
+    </div>
+    <div id="people"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/vocab.js"></script>
+  <script>
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const dayLabel = (d) => {
+      if (!d) return "—";
+      const diff = Math.floor((new Date(today()) - new Date(d)) / 86400000);
+      if (diff === 0) return "heute ✅";
+      if (diff === 1) return "gestern";
+      if (diff === 2) return "vor 2 Tagen";
+      return "vor " + diff + " Tagen";
+    };
+    const today = () => new Date().toISOString().slice(0, 10);
+
+    async function init() {
+      const { data: sess } = await sb.auth.getSession();
+      const email = sess?.session?.user?.email?.toLowerCase() || "";
+      const allowed =
+        DASHBOARD_EMAILS.length === 0 ||
+        DASHBOARD_EMAILS.some((e) => e.toLowerCase() === email);
+
+      if (!allowed) {
+        document.getElementById("denied").classList.remove("hidden");
+        return;
+      }
+
+      document.getElementById("dash").classList.remove("hidden");
+      document.getElementById("now").textContent = new Date().toLocaleString("de-DE");
+
+      const { data: cards } = await sb.from("learner_cards").select("*").order("updated_at", { ascending: false });
+      const people = document.getElementById("people");
+
+      if (!cards || cards.length === 0) {
+        people.innerHTML = '<p class="tip-box">Noch niemand hat sich registriert.</p>';
+        return;
+      }
+
+      for (const row of cards) {
+        const c = row.card || {};
+        const known = (c.seen || []).length;
+        const last = (c.lastReview || {});
+        // schwierige Wörter: viele Fehler + niedrige Box
+        const hard = VOCAB.filter((v) => (c.lapses || {})[v.id])
+          .sort((a, b) => (c.lapses[b.id] - c.lapses[a.id]))
+          .slice(0, 5);
+
+        const el = document.createElement("div");
+        el.className = "person-card";
+        el.innerHTML = `
+          <div class="person-name">👩 ${row.email || row.user_id.slice(0, 8)}</div>
+          <div class="person-sub">Letzte Aktivität: ${dayLabel(row.updated_at?.slice(0, 10))}</div>
+          <div class="mini-grid">
+            <div class="stat-card"><div class="stat-num">${c.streak || 0} 🔥</div><div class="stat-label">Streak (best: ${c.bestStreak || 0})</div></div>
+            <div class="stat-card"><div class="stat-num">${known}/${VOCAB.length}</div><div class="stat-label">Wörter gesehen</div></div>
+            <div class="stat-card"><div class="stat-num">${c.totalReviews || 0}</div><div class="stat-label">Übungen</div></div>
+            <div class="stat-card"><div class="stat-num">${c.totalReviews ? Math.round((c.totalCorrect / c.totalReviews) * 100) + "%" : "–"}</div><div class="stat-label">Treffquote</div></div>
+          </div>
+          ${
+            hard.length
+              ? '<div class="hard-words">⚠️ <b>Schwer (Telefon-Übung vorschlagen):</b> ' +
+                  hard.map((v) => `${v.de} (<i>${v.tr}</i>)`).join(" · ") + "</div>"
+              : '<div class="ok-note">✅ Keine besonders schwierigen Wörter — läuft super!</div>'
+          }
+        `;
+        people.appendChild(el);
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

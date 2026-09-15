@@ -1,0 +1,5 @@
+# Netlify: keine Build-Schritte nötig (reine Static Site), Publish = Repo-Root
+[build]
+  publish = "."
+
+﻿
