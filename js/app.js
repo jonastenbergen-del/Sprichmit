@@ -35,8 +35,13 @@ const state = {
   user: null,
   profile: { name: "", mother_tongue: "tr", ui_color: "blau" },
   card: null,    // aktive Lernkarte (für die aktuelle Richtung)
+  cardFull: null, // komplette learner_cards.card-Zeile (beide Richtungen)
   session: null,
 };
+let cardSaveChain = Promise.resolve(); // Save-Queue (seriell, keine Race Conditions)
+let navDepth = 0; // wie viele App-Einträge in der Browser-History
+let currentViewName = "home";
+let backForwardGuard = false; // verhindert Endlos-Loop beim Abbrechen per Browser-Back
 
 function leerCard() {
   return {
@@ -168,6 +173,7 @@ async function doForgot() {
 }
 
 async function doLogout() {
+  await flushCard(); // alle gespeicherten Fortschritte wirklich in die Cloud
   await sb.auth.signOut();
   location.reload();
 }
@@ -205,28 +211,41 @@ function cardFeld() { return "cards_" + (lerntDe ? "de" : "tr"); }
 async function loadCard() {
   const { data } = await sb.from("learner_cards").select("card").eq("user_id", state.user.id).maybeSingle();
   const feld = cardFeld();
-  if (data && data.card && data.card[feld]) {
-    state.card = data.card[feld];
+  state.cardFull = (data && data.card) ? data.card : {};
+  if (state.cardFull[feld]) {
+    state.card = state.cardFull[feld];
   } else {
     state.card = leerCard();
-    if (!data || !data.card) state.card.createdDay = todayStr();
-    await saveCard();
+    state.card.createdDay = todayStr();
+    state.cardFull[feld] = state.card;
+    saveCard();
   }
   state.card.words = state.card.words || {};
   state.card.lessons = state.card.lessons || {};
   updateStreakForToday();
 }
 
-async function saveCard() {
-  let existing = {};
-  const { data } = await sb.from("learner_cards").select("card").eq("user_id", state.user.id).maybeSingle();
-  if (data && data.card) existing = data.card;
+async function doSaveCard() {
+  const existing = state.cardFull || {};
   existing[cardFeld()] = state.card;
-  await sb.from("learner_cards").upsert({
+  const { error } = await sb.from("learner_cards").upsert({
     user_id: state.user.id,
     card: existing,
     updated_at: new Date().toISOString(),
   });
+  if (error) console.error("saveCard upsert:", error);
+}
+
+// Speichert die Lernkarte (1 Request, seriell in einer Queue — mehrere Saves
+// in kurzer Zeit werden hintereinander ausgeführt, nichts wird überschrieben)
+function saveCard() {
+  cardSaveChain = cardSaveChain.then(doSaveCard).catch((err) => console.error("saveCard:", err));
+  return cardSaveChain;
+}
+
+// Alles wirklich gespeichert (z. B. vor Logout)
+function flushCard() {
+  return cardSaveChain;
 }
 
 // ---------- STREAK ----------
@@ -308,43 +327,74 @@ async function showApp() {
   setView("home");
 }
 
-let viewHistory = [];
-function setView(name) {
-  const current = $("app").querySelector(".view:not(.hidden)");
-  const currentName = current ? current.id.replace("view-", "") : null;
-  if (currentName && currentName !== name) viewHistory.push(currentName);
-  if (viewHistory.length > 10) viewHistory.shift();
+// ---------- NAVIGATION ----------
+// Die Browser-History ist die einzige Quelle der Wahrheit (funktioniert mit
+// dem ⬅-Button in der Topbar UND mit dem Browser-/Handy-Back-Button).
+// Home = Tiefe 0. Jede weitere Ansicht schiebt max. 1 History-Eintrag,
+// Session hat immer ihren eigenen Eintrag (Back = Abbrechen mit Bestätigung).
+function showView(name) {
+  currentViewName = name;
   document.querySelectorAll(".view").forEach((v) => v.classList.add("hidden"));
   $("view-" + name).classList.remove("hidden");
   updateBackBtn();
+}
+
+function renderForView(name) {
   if (name === "home") renderHome();
   if (name === "path") renderPath();
   if (name === "profile") renderProfile();
+}
+
+function setView(name) {
+  if (name === "home") {
+    // Home ist immer die Wurzel (Tiefe 0) — nie einen extra History-Eintrag
+    navDepth = 0;
+    history.replaceState({ view: "home", depth: 0 }, "");
+    showView(name);
+    renderForView(name);
+    return;
+  }
+  const shouldPush = name === "session" || navDepth < 1;
+  if (shouldPush) {
+    navDepth++;
+    history.pushState({ view: name, depth: navDepth }, "");
+  } else {
+    history.replaceState({ view: name, depth: navDepth }, "");
+  }
+  showView(name);
+  renderForView(name);
+}
+
+// View wechseln OHNE neuen History-Eintrag
+function setViewDirect(name) {
+  history.replaceState({ view: name, depth: navDepth }, "");
+  showView(name);
+  renderForView(name);
 }
 
 function goBack() {
-  if (state.session) {
-    // In einer Session: erst Lektion beenden (mit Bestätigung)
+  const s = state.session;
+  if (s) {
+    if (s.index >= s.items.length) {
+      // Lektion fertig (Result-Screen): einfach zurück
+      state.session = null;
+      renderAll();
+      goBack();
+      return;
+    }
+    // In einer laufenden Session: erst Lektion beenden (mit Bestätigung)
     abortSession();
     return;
   }
-  const prev = viewHistory.pop() || "home";
-  setViewDirect(prev);
-}
-
-// View wechseln OHNE History-Eintrag (für den Back-Button selbst)
-function setViewDirect(name) {
-  document.querySelectorAll(".view").forEach((v) => v.classList.add("hidden"));
-  $("view-" + name).classList.remove("hidden");
-  updateBackBtn();
-  if (name === "home") renderHome();
-  if (name === "path") renderPath();
-  if (name === "profile") renderProfile();
+  if (navDepth > 0) {
+    navDepth--;
+    history.back();
+  }
 }
 
 function updateBackBtn() {
   const btn = $("btn-back");
-  const visible = viewHistory.length > 0 || !!state.session;
+  const visible = !$("app").classList.contains("hidden") && (navDepth > 0 || !!state.session);
   btn.classList.toggle("hidden", !visible);
 }
 
@@ -538,6 +588,7 @@ function startSession(lessonId) {
 
 // ---------- SESSION ABBRECHEN ----------
 function abortSession() {
+  backForwardGuard = false;
   const s = state.session;
   if (!s) return;
   const ok = window.confirm(t("session.abort.confirm"));
@@ -881,12 +932,51 @@ document.addEventListener("DOMContentLoaded", () => {
   $("link-haveacc").onclick = () => setAuthMode("login");
   $("btn-logout").onclick = () => setView("profile");
   $("p-logout").onclick = doLogout;
-  $("btn-path").onclick = () => setView("path");
+  $("btn-path").onclick = (ev) => {
+    const onHome = !$("view-home").classList.contains("hidden");
+    if (onHome) {
+      startSession(nextLesson() && nextLesson().id);
+    } else {
+      setView("path");
+    }
+  };
   $("btn-back").onclick = goBack;
   $("btn-abort").onclick = abortSession;
-  // Browser-Back-Button (Handy/PWA) = unsere Zurück-Logik statt Seite zu verlassen
-  window.addEventListener("popstate", () => {
-    if (!$("app").classList.contains("hidden")) goBack();
+  // Browser-/Handy-Back-Button = unsere App-Navigation
+  window.addEventListener("popstate", (e) => {
+    if ($("app").classList.contains("hidden")) return;
+    if (state.session) {
+      const st0 = e.state || {};
+      if (state.session.index >= state.session.items.length) {
+        // Lektion ist FERTIG (Result-Screen): Back = einfach zurück, kein Dialog
+        const ziel = (st0.view && st0.view !== "session") ? st0.view : "home";
+        navDepth = (ziel === "home") ? 0 : (typeof st0.depth === "number" ? st0.depth : 1);
+        state.session = null;
+        showView(ziel);
+        renderForView(ziel);
+        return;
+      }
+      // Session läuft noch: Back-Button wurde vor dem Session-Eintrag gedrückt —
+      // per forward wieder auf den Session-Eintrag springen und dort abfragen.
+      if (st0.view !== "session") {
+        if (backForwardGuard) {
+          backForwardGuard = false;
+          abortSession(); // zweites Mal: jetzt wirklich fragen (kein Loop)
+        } else {
+          backForwardGuard = true;
+          history.forward();
+        }
+        return;
+      }
+      abortSession();
+      return;
+    }
+    const st = (history.state && history.state.view) ? history.state : (e.state || {});
+    navDepth = typeof st.depth === "number" ? st.depth : 0;
+    let name = st.view || "home";
+    if (name === "session") name = "home"; // Session gibt es nicht mehr
+    showView(name);
+    renderForView(name);
   });
   $("dir-de").onclick = () => { lerntDe = true; applyUiLang(); markDirButtons(); };
   $("dir-tr").onclick = () => { lerntDe = false; applyUiLang(); markDirButtons(); };
