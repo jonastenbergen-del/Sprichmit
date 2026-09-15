@@ -412,38 +412,71 @@ function milestoneFor(seen) {
 }
 
 // ---------- PFAAD (20 Lektionen) ----------
+// Wichtig: KOMPLETT per DOM-Methoden (textContent) gebaut — kein innerHTML,
+// damit Titel mit "&" / Sonderzeichen nie kaputt oder leer gerendert werden.
 function renderPath() {
   const list = $("lesson-list");
   list.innerHTML = "";
-  DATA.lektionen.forEach((l) => {
-    const done = isLessonDone(l.id);
-    const unlocked = lessonUnlocked(l.id);
-    const seenCount = lessonWords(l.id).filter((w) => state.card.words[w.id]).length;
-    const row = document.createElement("div");
-    row.className = "task-item" + (unlocked ? "" : " locked");
-    row.style.opacity = unlocked ? "1" : "0.45";
+  try {
+    DATA.lektionen.forEach((l) => {
+      const done = isLessonDone(l.id);
+      const unlocked = lessonUnlocked(l.id);
+      const seenCount = lessonWords(l.id).filter((w) => state.card.words[w.id]).length;
 
-    const emoji = document.createElement("div");
-    emoji.className = "task-de";
-    emoji.style.fontSize = "26px";
-    emoji.style.width = "38px";
-    emoji.style.textAlign = "center";
-    emoji.textContent = done ? "✅" : l.emoji;
+      const row = document.createElement("div");
+      row.className = "lesson-item" + (unlocked ? "" : " locked");
 
-    const main = document.createElement("div");
-    main.className = "task-main";
-    main.innerHTML =
-      '<div class="task-de">' + l.emoji + " " + l.id + " — " + l.titel + "</div>" +
-      '<div class="task-tr">' +
-      (done ? "✔ " + t("path.done") : unlocked ? seenCount + "/" + WORDS_PER_LESSON + " · " + t("path.start") : "🔒 " + t("path.locked")) +
-      "</div>";
+      // Linkes Emoji
+      const emoji = document.createElement("div");
+      emoji.className = "lesson-emoji";
+      emoji.textContent = done ? "✅" : (l.emoji || "📚");
 
-    if (unlocked) {
-      row.onclick = () => startSession(l.id);
-      row.style.cursor = "pointer";
-    }
-    list.appendChild(row);
-  });
+      // Mitte: Titel + "Lektion N"-Badge + Statuszeile
+      const main = document.createElement("div");
+      main.className = "lesson-main";
+
+      const toprow = document.createElement("div");
+      toprow.className = "lesson-toprow";
+
+      const titel = document.createElement("div");
+      titel.className = "lesson-titel";
+      titel.textContent = l.titel;
+
+      const num = document.createElement("span");
+      num.className = "lesson-num";
+      num.textContent = t("path.lesson") + " " + l.id;
+
+      toprow.appendChild(titel);
+      toprow.appendChild(num);
+
+      const sub = document.createElement("div");
+      sub.className = "lesson-sub";
+      if (done) {
+        sub.textContent = "✔ " + t("path.done");
+      } else if (unlocked) {
+        sub.textContent = seenCount + "/" + WORDS_PER_LESSON + " · " + t("path.start");
+      } else {
+        sub.textContent = "🔒 " + t("path.locked");
+      }
+
+      main.appendChild(toprow);
+      main.appendChild(sub);
+      row.appendChild(emoji);
+      row.appendChild(main);
+
+      if (unlocked) {
+        row.onclick = () => startSession(l.id);
+      }
+      list.appendChild(row);
+    });
+  } catch (err) {
+    // Sichtbarer Fehler statt still leere Liste
+    const fehler = document.createElement("div");
+    fehler.className = "error";
+    fehler.textContent = "❌ " + (err && err.message ? err.message : "Fehler beim Laden der Lektionen");
+    list.appendChild(fehler);
+    if (typeof console !== "undefined") console.error("renderPath:", err);
+  }
 }
 
 // ---------- SESSION ----------

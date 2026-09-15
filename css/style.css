@@ -449,6 +449,17 @@ button:focus-visible, input:focus-visible {
   .flashcard-de { font-size: 42px; }
 }
 
+/* ---------- DESKTOP: breitere Spalte + 2-Spalten-Lektionen-Grid ---------- */
+@media (min-width: 700px) {
+  main { max-width: 780px; }
+  #lesson-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .lesson-item { margin-bottom: 0; }
+}
+
 /* ---------- V4 ZUSATZ ---------- */
 /* Sperren (z. B. Aufgaben/Lektionen, die noch freigeschaltet werden müssen) */
 .locked {
@@ -469,4 +480,54 @@ button:focus-visible, input:focus-visible {
 .session .flashcard {
   min-height: 220px;
   justify-content: center;
+}
+
+/* ---------- LERNE-PFAAD: Lektions-Karten ---------- */
+.lesson-item {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.15s;
+  animation: fade-in 0.25s ease;
+}
+.lesson-item:hover {
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-1px);
+}
+.lesson-emoji {
+  font-size: 30px;
+  width: 44px;
+  min-width: 44px;
+  text-align: center;
+}
+.lesson-main { flex: 1; min-width: 0; }
+.lesson-toprow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.lesson-titel { font-weight: 800; font-size: 18px; }
+.lesson-num {
+  background: #eef2ff;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.lesson-sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
+.lesson-item.locked {
+  opacity: 0.5;
+  filter: grayscale(0.3);
+  pointer-events: none;
+  user-select: none;
+  cursor: default;
 }
