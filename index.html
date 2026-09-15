@@ -27,16 +27,22 @@
       </div>
 
       <div id="login-form" style="margin-top:14px">
+        <p id="login-title" style="font-weight:700;margin-bottom:12px"></p>
         <input type="email" id="login-email" placeholder="E-Mail" autocomplete="email">
         <input type="password" id="login-password" placeholder="Passwort" autocomplete="current-password">
         <button class="btn btn-primary btn-big" id="btn-login">Anmelden</button>
         <div id="login-error" class="error"></div>
+        <button class="auth-link" id="btn-forgot">Passwort vergessen?</button>
+        <button class="auth-link" id="link-newuser" style="margin-top:14px">Neu hier? → Registrieren</button>
       </div>
 
-      <div id="signup-box" class="hidden">
-        <p>Neu hier? Zuerst registrieren:</p>
+      <div id="signup-form" class="hidden" style="margin-top:14px">
+        <p id="signup-title" style="font-weight:700;margin-bottom:12px"></p>
+        <input type="email" id="signup-email" placeholder="E-Mail" autocomplete="email">
+        <input type="password" id="signup-password" placeholder="Passwort (mind. 6 Zeichen)" autocomplete="new-password">
         <button class="btn btn-primary btn-big" id="btn-signup">Registrieren</button>
-        <button class="btn btn-ghost" id="btn-back-login">← Zurück zum Login</button>
+        <div id="signup-error" class="error"></div>
+        <button class="auth-link" id="link-haveacc" style="margin-top:14px">Schon ein Konto? ← Anmelden</button>
       </div>
     </div>
   </div>

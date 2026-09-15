@@ -92,6 +92,15 @@ async function initAuth() {
   }
 }
 
+// An- / Registrierungs-Ansicht umschalten
+function setAuthMode(mode) {
+  const login = mode === "login";
+  $("login-form").classList.toggle("hidden", !login);
+  $("signup-form").classList.toggle("hidden", login);
+  $("login-error").textContent = "";
+  $("signup-error").textContent = "";
+}
+
 async function doLogin() {
   const email = $("login-email").value.trim();
   const password = $("login-password").value;
@@ -107,28 +116,55 @@ async function doLogin() {
     showApp();
     return;
   }
+  // KEIN Auto-Registrieren mehr — klare Fehlermeldung
   if (/invalid login credentials/i.test(error.message)) {
-    err.textContent = t("login.registering");
-    const { error: sigErr } = await sb.auth.signUp({ email, password });
-    err.textContent = sigErr
-      ? t("login.error", { msg: sigErr.message })
-      : "✅ " + t("login.registered");
-    return;
+    err.textContent = "❌ " + t("login.invalid");
+  } else {
+    err.textContent = "❌ " + t("login.error", { msg: error.message });
   }
-  err.textContent = error.message;
 }
 
 async function doSignup() {
-  const email = $("login-email").value.trim();
-  const password = $("login-password").value;
-  const err = $("login-error");
+  const email = $("signup-email").value.trim();
+  const password = $("signup-password").value;
+  const err = $("signup-error");
   err.textContent = "";
   if (!email || password.length < 6) {
-    err.textContent = "❗";
+    err.textContent = "❗ " + t("login.shortpw");
     return;
   }
   const { error } = await sb.auth.signUp({ email, password });
-  err.textContent = error ? error.message : "✅ " + t("login.registered");
+  if (error) {
+    if (/already registered|already been registered|already exists/i.test(error.message)) {
+      err.textContent = "⚠️ " + t("login.exists");
+    } else {
+      err.textContent = "❌ " + t("login.error", { msg: error.message });
+    }
+    return;
+  }
+  err.textContent = "✅ " + t("login.signup.ok");
+  // E-Mail-Bestätigung aus (Supabase-Standard ist an) -> direkt einloggen
+  setAuthMode("login");
+  $("login-email").value = email;
+  $("login-password").value = password;
+}
+
+async function doForgot() {
+  const email = $("login-email").value.trim();
+  const err = $("login-error");
+  err.textContent = "";
+  if (!email) {
+    err.textContent = "❗";
+    return;
+  }
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + "/?reset=1",
+  });
+  // Absichtlich immer "versendet" anzeigen, damit E-Mail-Adressen nicht
+  // als Konten ausgeleckt werden (Supabase macht dasselbe).
+  err.textContent = error
+    ? "❌ " + t("login.error", { msg: error.message })
+    : "📧 " + t("login.forgot.sent");
 }
 
 async function doLogout() {
@@ -302,7 +338,12 @@ function renderAll() {
   $("p-logout").textContent = t("profile.out");
   $("login-sub").textContent = t("login.sub");
   $("login-choose").textContent = t("login.choose");
+  $("login-title").textContent = t("login.title");
+  $("signup-title").textContent = t("login.signup.title");
   $("btn-login").textContent = t("login.submit");
+  $("btn-forgot").textContent = t("login.forgot");
+  $("link-newuser").textContent = t("login.newuser");
+  $("link-haveacc").textContent = t("login.haveacc");
   markDirButtons();
 }
 
@@ -725,7 +766,9 @@ function renderProfile() {
 document.addEventListener("DOMContentLoaded", () => {
   $("btn-login").onclick = doLogin;
   $("btn-signup").onclick = doSignup;
-  $("btn-back-login").onclick = () => { $("login-error").textContent = ""; };
+  $("btn-forgot").onclick = doForgot;
+  $("link-newuser").onclick = () => setAuthMode("signup");
+  $("link-haveacc").onclick = () => setAuthMode("login");
   $("btn-logout").onclick = () => setView("profile");
   $("p-logout").onclick = doLogout;
   $("btn-path").onclick = () => setView("path");
@@ -733,5 +776,17 @@ document.addEventListener("DOMContentLoaded", () => {
   $("dir-tr").onclick = () => { lerntDe = false; applyUiLang(); markDirButtons(); };
   $("p-dir-de").onclick = () => setRichtung(true);
   $("p-dir-tr").onclick = () => setRichtung(false);
+  // Sessionsänderungen mitverfolgen (Reset-Link, Logout in anderem Tab, Session abgelaufen)
+  sb.auth.onAuthStateChange((_event, session) => {
+    if (session) {
+      state.user = session.user;
+      showApp();
+    } else {
+      state.user = null;
+      $("login-screen").classList.remove("hidden");
+      $("app").classList.add("hidden");
+      setAuthMode("login");
+    }
+  });
   initAuth();
 });
