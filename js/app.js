@@ -308,12 +308,44 @@ async function showApp() {
   setView("home");
 }
 
+let viewHistory = [];
 function setView(name) {
+  const current = $("app").querySelector(".view:not(.hidden)");
+  const currentName = current ? current.id.replace("view-", "") : null;
+  if (currentName && currentName !== name) viewHistory.push(currentName);
+  if (viewHistory.length > 10) viewHistory.shift();
   document.querySelectorAll(".view").forEach((v) => v.classList.add("hidden"));
   $("view-" + name).classList.remove("hidden");
+  updateBackBtn();
   if (name === "home") renderHome();
   if (name === "path") renderPath();
   if (name === "profile") renderProfile();
+}
+
+function goBack() {
+  if (state.session) {
+    // In einer Session: erst Lektion beenden (mit Bestätigung)
+    abortSession();
+    return;
+  }
+  const prev = viewHistory.pop() || "home";
+  setViewDirect(prev);
+}
+
+// View wechseln OHNE History-Eintrag (für den Back-Button selbst)
+function setViewDirect(name) {
+  document.querySelectorAll(".view").forEach((v) => v.classList.add("hidden"));
+  $("view-" + name).classList.remove("hidden");
+  updateBackBtn();
+  if (name === "home") renderHome();
+  if (name === "path") renderPath();
+  if (name === "profile") renderProfile();
+}
+
+function updateBackBtn() {
+  const btn = $("btn-back");
+  const visible = viewHistory.length > 0 || !!state.session;
+  btn.classList.toggle("hidden", !visible);
 }
 
 function renderAll() {
@@ -500,7 +532,20 @@ function startSession(lessonId) {
     results: [],
   };
   setView("session");
+  $("btn-abort").textContent = t("session.abort");
   renderSessionItem();
+}
+
+// ---------- SESSION ABBRECHEN ----------
+function abortSession() {
+  const s = state.session;
+  if (!s) return;
+  const ok = window.confirm(t("session.abort.confirm"));
+  if (!ok) return;
+  const answered = s.results.length;
+  state.session = null;
+  setViewDirect("path");
+  toast(t("session.abort.done", { n: answered }), "ok");
 }
 
 function sessionProgress() {
@@ -517,7 +562,7 @@ function renderSessionItem() {
   }
   const it = s.items[s.index];
   const v = it.w;
-  const mode = it.fresh ? "learn" : pickMode(v);
+  const mode = it.fresh ? "learn" : (it.quizMode ? (Math.random() < 0.5 ? "de2tr" : "tr2de") : pickMode(v));
   const content = $("session-content");
   const instr = $("session-instruction");
   content.innerHTML = "";
@@ -535,18 +580,27 @@ function renderSessionItem() {
       '<div class="flashcard-tr hidden" id="s-flip"></div>';
     content.appendChild(card);
 
+    // 3 Stufen für NEUE Wörter:
+    //  - "Klar, kann ich!"  -> Box 1 (wird normal oft wiederholt)
+    //  - "Gehört, aber noch Probleme" -> Box 1 (gleicher Verlauf)
+    //  - "Neu für mich"     -> Box 0 + Wort kommt NOCHMAL in dieser Lektion dran (Multiple-Choice)
     const row = document.createElement("div");
-    row.className = "answer-row";
+    row.className = "answer-row col";
     const knowBtn = document.createElement("button");
     knowBtn.className = "btn btn-right";
-    knowBtn.textContent = t("session.knownbtn");
-    knowBtn.onclick = () => answerItem(true, it);
-    const zorBtn = document.createElement("button");
-    zorBtn.className = "btn btn-wrong";
-    zorBtn.textContent = t("session.zorbtn");
-    zorBtn.onclick = () => answerItem(false, it);
-    row.appendChild(zorBtn);
+    knowBtn.textContent = t("session.know");
+    knowBtn.onclick = () => answerFresh(it, 1, false);
+    const maybeBtn = document.createElement("button");
+    maybeBtn.className = "btn btn-mid";
+    maybeBtn.textContent = t("session.maybe");
+    maybeBtn.onclick = () => answerFresh(it, 1, false);
+    const neuBtn = document.createElement("button");
+    neuBtn.className = "btn btn-wrong";
+    neuBtn.textContent = t("session.neu");
+    neuBtn.onclick = () => answerFresh(it, 0, true);
     row.appendChild(knowBtn);
+    row.appendChild(maybeBtn);
+    row.appendChild(neuBtn);
     content.appendChild(row);
 
     TTS.speak(DATA.ziel(v));
@@ -669,6 +723,29 @@ function renderExercise(mode, v, content, instr) {
     input.onkeydown = (e) => { if (e.key === "Enter") doWriteCheck(); };
     check.onclick = doWriteCheck;
   }
+}
+
+// Antwort auf ein NEUES Wort (3 Stufen) — eigenes Funktion, damit die Box
+// logik gezielt ist: neue Wörter springen nie Boxen, "neu" wird sofort wiederholt
+function answerFresh(it, box, requeue) {
+  const s = state.session;
+  const v = it.w;
+  markActive();
+  state.card.words[v.id] = { box: box, last: todayStr(), lapses: requeue ? 1 : 0 };
+  if (requeue) {
+    // Wort kommt am Ende dieser Lektion als Multiple-Choice nochmal dran
+    s.items.push({ w: v, fresh: false, quizMode: true });
+  }
+  if (!requeue) {
+    const xpGewinn = 5;
+    state.card.xp = (state.card.xp || 0) + xpGewinn;
+    s.correct++;
+    toast(t("misc.xpt", { n: xpGewinn }), "ok");
+  }
+  s.results.push({ w: v, fresh: true, correct: !requeue, wrongPick: null, neu: requeue });
+  saveCard();
+  s.index++;
+  renderSessionItem();
 }
 
 function answerItem(correct, it, wrongPick) {
@@ -805,6 +882,12 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btn-logout").onclick = () => setView("profile");
   $("p-logout").onclick = doLogout;
   $("btn-path").onclick = () => setView("path");
+  $("btn-back").onclick = goBack;
+  $("btn-abort").onclick = abortSession;
+  // Browser-Back-Button (Handy/PWA) = unsere Zurück-Logik statt Seite zu verlassen
+  window.addEventListener("popstate", () => {
+    if (!$("app").classList.contains("hidden")) goBack();
+  });
   $("dir-de").onclick = () => { lerntDe = true; applyUiLang(); markDirButtons(); };
   $("dir-tr").onclick = () => { lerntDe = false; applyUiLang(); markDirButtons(); };
   $("p-dir-de").onclick = () => setRichtung(true);

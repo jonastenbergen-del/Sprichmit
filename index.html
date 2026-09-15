@@ -51,7 +51,10 @@
   <div id="app" class="hidden">
 
     <header class="topbar">
-      <div class="streak" title="Streak" aria-label="Streak">🔥 <span id="streak-count">0</span> <span id="streak-unit"></span></div>
+      <div class="topbar-left">
+        <button class="icon-btn" id="btn-back" title="Zurück" aria-label="Zurück">←</button>
+        <div class="streak" title="Streak" aria-label="Streak">🔥 <span id="streak-count">0</span> <span id="streak-unit"></span></div>
+      </div>
       <div class="topbar-title">SprichMit</div>
       <button class="icon-btn" id="btn-logout" title="Profil" aria-label="Profil">👤</button>
     </header>
@@ -105,6 +108,7 @@
         <div class="progress-bar"><div id="progress-fill"></div></div>
         <p class="instruction" id="session-instruction"></p>
         <div id="session-content"></div>
+        <button class="btn btn-ghost abort-btn" id="btn-abort"></button>
       </section>
 
       <!-- --- ERGEBNIS --- -->

@@ -99,9 +99,11 @@ button { font-family: inherit; cursor: pointer; border: none; }
 .btn-big { font-size: 19px; padding: 18px; }
 
 .btn-right { background: var(--green); color: #fff; flex: 1; }
+.btn-mid { background: #fde68a; color: #92400e; flex: 1; }
 .btn-wrong { background: var(--red-light); color: var(--red); flex: 1; }
 
 .answer-row { display: flex; gap: 12px; margin-top: 18px; }
+.answer-row.col { flex-direction: column; }
 
 .icon-btn {
   background: rgba(255,255,255,0.2);
@@ -124,6 +126,7 @@ button { font-family: inherit; cursor: pointer; border: none; }
   z-index: 10;
 }
 .topbar-title { font-weight: 700; font-size: 17px; }
+.topbar-left { display: flex; align-items: center; gap: 8px; }
 .streak {
   background: rgba(255,255,255,0.2);
   padding: 6px 12px;
@@ -531,3 +534,17 @@ button:focus-visible, input:focus-visible {
   user-select: none;
   cursor: default;
 }
+
+/* ---------- SESSION: Lektion abbrechen ---------- */
+.abort-btn {
+  margin: 26px auto 0;
+  width: 100%;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 10px;
+  border: 2px dashed #d1d5db;
+  border-radius: 14px;
+  background: transparent;
+}
+.abort-btn:hover { color: var(--red); border-color: var(--red); }
