@@ -170,9 +170,20 @@ main { max-width: 520px; margin: 0 auto; padding: 20px 16px 100px; }
   padding: 18px;
   text-align: center;
   box-shadow: var(--shadow);
+  border-top: 4px solid transparent;
 }
-.stat-num { font-size: 32px; font-weight: 800; color: var(--primary); }
+.stat-num { font-size: 34px; font-weight: 800; color: var(--primary); }
 .stat-label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+/* farbige Akzente pro Statistik */
+#stat-new       { color: var(--green); }
+#stat-due       { color: #ea580c; }
+#stat-known     { color: var(--primary); }
+#stat-xp        { color: var(--primary-2); }
+.stat-card:nth-child(1) { border-top-color: var(--green); }
+.stat-card:nth-child(2) { border-top-color: #ea580c; }
+.stat-card:nth-child(3) { border-top-color: var(--primary); }
+.stat-card:nth-child(4) { border-top-color: var(--primary-2); }
 
 /* ---------- PROGRESS BAR ---------- */
 .progress-bar {
@@ -461,6 +472,12 @@ button:focus-visible, input:focus-visible {
     gap: 14px;
   }
   .lesson-item { margin-bottom: 0; }
+  .module-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .module-list .module-item { margin-bottom: 0; }
 }
 
 /* ---------- V4 ZUSATZ ---------- */
@@ -533,6 +550,12 @@ button:focus-visible, input:focus-visible {
   pointer-events: none;
   user-select: none;
   cursor: default;
+}
+
+/* ---------- HOME: MODUL-KARTEN ---------- */
+.module-list .module-item {
+  margin-bottom: 10px;
+  padding: 14px 18px;
 }
 
 /* ---------- SESSION: Lektion abbrechen ---------- */

@@ -403,10 +403,10 @@ function renderAll() {
   $("streak-unit").textContent = t("home.streak");
   $("home-hello").textContent = t("home.hello", { name: state.profile.name || "🙂" });
   $("home-learning").textContent = "📖 " + t("home.learning");
-  $("label-newtoday").textContent = t("home.newtoday");
-  $("label-duetoday").textContent = t("home.duetoday");
-  $("label-known").textContent = t("profile.stats.words");
-  $("label-xp").textContent = t("profile.stats.xp");
+  $("label-newtoday").textContent = "🆕 " + t("home.newtoday");
+  $("label-duetoday").textContent = "🔁 " + t("home.duetoday");
+  $("label-known").textContent = "📚 " + t("profile.stats.words");
+  $("label-xp").textContent = "⭐ " + t("profile.stats.xp");
   $("path-h2").textContent = t("path.title");
   $("path-sub").textContent = t("path.sub");
   $("home-tip").textContent = t("home.tip");
@@ -481,6 +481,48 @@ function renderHome() {
   }
 
   renderGoal();
+  renderModules();
+}
+
+// Modul-Karten unter dem Haupt-Button: Nur-Wiederholungen (aktiv/grau) +
+// Rechtschreibung & Grammatik (Platzhalter "bald!")
+function renderModules() {
+  const list = $("module-list");
+  if (!list) return;
+  list.innerHTML = "";
+  const due = dueWordsForSession().length;
+
+  const mk = (emoji, title, sub, onClick, locked) => {
+    const row = document.createElement("div");
+    row.className = "lesson-item module-item" + (locked ? " locked" : "");
+    const em = document.createElement("div");
+    em.className = "lesson-emoji";
+    em.textContent = emoji;
+    const main = document.createElement("div");
+    main.style.flex = "1";
+    const titel = document.createElement("div");
+    titel.className = "lesson-titel";
+    titel.textContent = title;
+    const s = document.createElement("div");
+    s.className = "lesson-sub";
+    s.textContent = sub;
+    main.appendChild(titel);
+    main.appendChild(s);
+    row.appendChild(em);
+    row.appendChild(main);
+    if (onClick) row.onclick = onClick;
+    list.appendChild(row);
+  };
+
+  mk(
+    "🔁",
+    t("home.review"),
+    due > 0 ? t("home.review.d", { n: due }) : t("home.review.empty"),
+    due > 0 ? () => startSession(null, "review") : null,
+    due === 0
+  );
+  mk("✍️", t("home.spelling"), t("home.soon"), () => toast(t("home.soon.toast"), "warn"), false);
+  mk("📖", t("home.grammar"), t("home.soon"), () => toast(t("home.soon.toast"), "warn"), false);
 }
 
 function milestoneFor(seen) {
@@ -562,20 +604,22 @@ function renderPath() {
 }
 
 // ---------- SESSION ----------
-function startSession(lessonId) {
+function startSession(lessonId, mode) {
+  mode = mode || "lerne"; // "lerne" = neue + Wiederholungen, "review" = nur Wiederholungen
   const l = lessonId || (nextLesson() && nextLesson().id) || 1;
-  const fresh = newWordsForSession();
+  const fresh = mode === "lerne" ? newWordsForSession() : [];
   const due = dueWordsForSession();
   const items = [
     ...due.map((w) => ({ w, fresh: false })),
     ...fresh.map((w) => ({ w, fresh: true })),
   ];
   if (items.length === 0) {
-    toast(t("home.startnone"), "ok");
+    toast(mode === "review" ? t("home.review.empty") : t("home.startnone"), "ok");
     return;
   }
   state.session = {
     lessonId: l,
+    mode: mode,
     items: items,
     index: 0,
     correct: 0,
